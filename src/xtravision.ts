@@ -44,14 +44,14 @@ type ScreenerChatFilter = {
 };
 
 export class XtraVision {
-  readonly userId: string | null;
+  private userId: string | null;
   readonly appId: string;
   readonly orgId: string;
   readonly token: string;
   graphQLClient: GraphQLClient;
 
   constructor(credentials: Credentials, params: jwt.SignOptions = { expiresIn: '24h' }) {
-    this.userId = credentials.userId ? credentials.userId : null;
+    this.userId = credentials.userId ?? null;
     this.appId = credentials.appId;
     this.orgId = credentials.orgId;
 
@@ -88,6 +88,8 @@ export class XtraVision {
 
     // make graphql call to XTRA SaaS server and return the data
     const response = await this.graphQLClient.request(REGISTER_USER_MUTATION, variables);
+    // once the user registration successful, set the userId and in registration response id is the userId 
+    this.userId = response?.registerUser?.id ?? null;
     return response?.registerUser;
   }
 
@@ -96,7 +98,9 @@ export class XtraVision {
 
     // make graphql call to XTRA SaaS server and return the data
     const response = await this.graphQLClient.request(USER_SESSION_CREATE_MUTATION, variables);
-    return response.createUserSession;
+    // once the user session created, set the userId and in create session userId is the returned userId 
+    this.userId = response?.createUserSession?.userId ?? null;
+    return response?.createUserSession;
   }
 
   async getAuthorizedData(authToken: string, sessionId: string | null, data: any) {
@@ -129,7 +133,7 @@ export class XtraVision {
    * 
    * @returns 
    */
-  async getScreenerChatHistory(filter?: ScreenerChatFilter, limit: Number = 10, offset: Number = 0, order = 'DESC') {
+  async getScreenerChatHistory(filter?: ScreenerChatFilter, limit: Number = 10, offset: Number = 0, order: string = 'DESC') {
     const variables: any = {};
     if (filter && typeof filter === "object" ) variables['filter'] = filter;
 
